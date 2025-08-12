@@ -21,6 +21,8 @@ def load_module():
     
     print('Available Models.....')
     models=view(ollama.list()['models'])
+    if len(models)==0:
+        print("Please Download any Models\nSay yes and Choose a model to download and use\n")
     while True:
         ask=input("Would you Like to download more : (Yes/No)")
         if ask.lower().replace(' ','')=="yes":
