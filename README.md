@@ -1,3 +1,4 @@
+##Task - 1##
 ## Simple Chatbot CLI with Ollama and Memory
 
 This is a command-line chatbot you can talk to using an Ollama model. It remembers what you say and can chat with you back.
