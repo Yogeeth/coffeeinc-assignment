@@ -11,25 +11,25 @@ st.set_page_config(
     layout="wide"
 )
 
-if "conversations" not in st.session_state:
-    st.session_state.conversations = {}
+if "chats" not in st.session_state:
+    st.session_state.chats = {}
 
-if "current_chat_id" not in st.session_state:
-    st.session_state.current_chat_id = None
+if "active_chat" not in st.session_state:
+    st.session_state.active_chat = None
 
 if "chat_counter" not in st.session_state:
     st.session_state.chat_counter = 0
 
-if "selected_model" not in st.session_state:
-    st.session_state.selected_model = None
+if "model" not in st.session_state:
+    st.session_state.model = None
 
 if "llm" not in st.session_state:
     st.session_state.llm = None
 
-if "downloading" not in st.session_state:
-    st.session_state.downloading = False
+if "is_downloading" not in st.session_state:
+    st.session_state.is_downloading = False
 
-def get_available_models():
+def list_models():
     try:
         result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
@@ -84,7 +84,7 @@ def show_download_interface():
         for i, model in enumerate(popular_models):
             with cols[i % 3]:
                 if st.button(f"{model}", key=f"download_{model}", use_container_width=True):
-                    download_selected_model(model)
+                    start_download(model)
     
     with tab2:
         st.write("Enter a custom model name:")
@@ -96,14 +96,14 @@ def show_download_interface():
         
         if st.button("Download Custom Model", type="primary", disabled=not custom_model):
             if custom_model.strip():
-                download_selected_model(custom_model.strip())
+                start_download(custom_model.strip())
 
-def download_selected_model(model_name):
-    if st.session_state.downloading:
+def start_download(model_name):
+    if st.session_state.is_downloading:
         st.warning("Another model is currently downloading. Please wait.")
         return
     
-    st.session_state.downloading = True
+    st.session_state.is_downloading = True
     progress_container = st.empty()
     
     with progress_container.container():
@@ -125,9 +125,9 @@ def download_selected_model(model_name):
     else:
         st.error(message)
     
-    st.session_state.downloading = False
+    st.session_state.is_downloading = False
 
-def generate_answer(memory, user_input, llm):
+def get_response(memory, user_input, llm):
     context = memory.load_memory_variables({})["history"]
     prompt = f"""
     You are a helpful and concise AI assistant.
@@ -162,26 +162,26 @@ def create_new_chat():
     
     memory = ConversationBufferMemory(return_messages=False)
     
-    st.session_state.conversations[chat_id] = {
+    st.session_state.chats[chat_id] = {
         "messages": [],
         "title": f"Chat {st.session_state.chat_counter}",
         "created": datetime.now().strftime("%H:%M"),
         "memory": memory
     }
-    st.session_state.current_chat_id = chat_id
+    st.session_state.active_chat = chat_id
     st.rerun()
 
 def delete_chat(chat_id):
-    if chat_id in st.session_state.conversations:
-        del st.session_state.conversations[chat_id]
-        if st.session_state.current_chat_id == chat_id:
-            if st.session_state.conversations:
-                st.session_state.current_chat_id = list(st.session_state.conversations.keys())[-1]
+    if chat_id in st.session_state.chats:
+        del st.session_state.chats[chat_id]
+        if st.session_state.active_chat == chat_id:
+            if st.session_state.chats:
+                st.session_state.active_chat = list(st.session_state.chats.keys())[-1]
             else:
-                st.session_state.current_chat_id = None
+                st.session_state.active_chat = None
         st.rerun()
 
-available_models = get_available_models()
+models = list_models()
 
 with st.sidebar:
     st.title("Chat")
@@ -193,82 +193,82 @@ with st.sidebar:
         
         for model in popular_models_sidebar:
             if st.button(f"{model}", key=f"sidebar_{model}", use_container_width=True):
-                download_selected_model(model)
+                start_download(model)
         
         custom_model_sidebar = st.text_input("Custom model:", placeholder="e.g., llama2:7b", key="sidebar_custom")
         if st.button("Download", disabled=not custom_model_sidebar, use_container_width=True):
             if custom_model_sidebar.strip():
-                download_selected_model(custom_model_sidebar.strip())
+                start_download(custom_model_sidebar.strip())
     
     st.divider()
     
-    if not available_models:
+    if not models:
         st.warning("No models found")
         st.write("Download a model to get started!")
     else:
-        if not st.session_state.selected_model:
-            st.session_state.selected_model = available_models[0]
+        if not st.session_state.model:
+            st.session_state.model = models[0]
 
-        if not st.session_state.llm and st.session_state.selected_model:
+        if not st.session_state.llm and st.session_state.model:
             try:
-
-                st.session_state.llm = OllamaLLM(model=st.session_state.selected_model)
+                st.session_state.llm = OllamaLLM(model=st.session_state.model)
             except Exception as e:
                 st.error(f"Error initializing LLM: {e}")
         
         selected_model = st.selectbox(
             "Model:", 
-            available_models,
-            index=available_models.index(st.session_state.selected_model) 
-            if st.session_state.selected_model in available_models else 0
+            models,
+            index=models.index(st.session_state.model) 
+            if st.session_state.model in models else 0
         )
 
-        if selected_model != st.session_state.selected_model:
+        if selected_model != st.session_state.model:
             try:
                 with st.spinner(f"Loading {selected_model}..."):
-                    st.session_state.selected_model = selected_model
-                    print(st.session_state.selected_model )
+                    st.session_state.model = selected_model
+                    print(st.session_state.model)
                     st.session_state.llm = OllamaLLM(model=selected_model)
                 st.rerun()
             except Exception as e:
                 st.error(f"Error switching to {selected_model}: {e}")
         
-        if st.session_state.llm and st.session_state.selected_model:
-            st.success(f"{st.session_state.selected_model}")
+        if st.session_state.llm and st.session_state.model:
+            st.success(f"{st.session_state.model}")
         else:
             st.error("LLM not initialized")
     
-    if st.button("New Chat", use_container_width=True, disabled=not available_models):
+    if st.button("New Chat", use_container_width=True, disabled=not models):
         create_new_chat()
     
     st.divider()
     
-    if st.session_state.conversations:
+    if st.session_state.chats:
         st.write("**Chat History:**")
-        for chat_id, chat_data in reversed(list(st.session_state.conversations.items())):
+        for chat_id, chat_data in reversed(list(st.session_state.chats.items())):
             col1, col2 = st.columns([4, 1])
             with col1:
                 if st.button(
                     chat_data["title"], 
                     key=f"select_{chat_id}",
                     use_container_width=True,
-                    type="primary" if chat_id == st.session_state.current_chat_id else "secondary"
+                    type="primary" if chat_id == st.session_state.active_chat else "secondary"
                 ):
-                    st.session_state.current_chat_id = chat_id
+                    st.session_state.active_chat = chat_id
                     st.rerun()
             with col2:
                 if st.button("Delete", key=f"delete_{chat_id}"):
                     delete_chat(chat_id)
     else:
         st.write("No chats yet")
-print(available_models)
-if not available_models:
+
+print(models)
+if not models:
     st.title("Welcome to Simple Chat")
     st.write("Get started by downloading a model:")
     show_download_interface()
     
-elif st.session_state.current_chat_id and st.session_state.current_chat_id in st.session_state.conversations:
-    current_chat = st.session_state.conversations[st.session_state.current_chat_id]
+elif st.session_state.active_chat and st.session_state.active_chat in st.session_state.chats:
+    current_chat = st.session_state.chats[st.session_state.active_chat]
     
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -304,7 +304,7 @@ elif st.session_state.current_chat_id and st.session_state.current_chat_id in st
                 full_response = ""
                 
                 try:
-                    for chunk in generate_answer(current_chat["memory"], prompt, st.session_state.llm):
+                    for chunk in get_response(current_chat["memory"], prompt, st.session_state.llm):
                         full_response += chunk
                         response_placeholder.write(full_response + "▌")
                         time.sleep(0.01)
@@ -312,7 +312,7 @@ elif st.session_state.current_chat_id and st.session_state.current_chat_id in st
                     response_placeholder.write(full_response)
                     
                     current_chat["messages"].append({"role": "assistant", "content": full_response})
-                    st.session_state.conversations[st.session_state.current_chat_id] = current_chat
+                    st.session_state.chats[st.session_state.active_chat] = current_chat
                     st.rerun()
                     
                 except Exception as e:
@@ -325,8 +325,8 @@ elif st.session_state.current_chat_id and st.session_state.current_chat_id in st
 
 else:
     st.title("Simple Chat")
-    if st.session_state.selected_model:
-        st.write(f"Using **{st.session_state.selected_model}**")
+    if st.session_state.model:
+        st.write(f"Using **{st.session_state.model}**")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Start Chatting", type="primary"):
