@@ -128,6 +128,7 @@ def start_download(model_name):
     st.session_state.is_downloading = False
 
 def get_response(memory, user_input, llm):
+    yield "generating...\n\n"
     context = memory.load_memory_variables({})["history"]
     prompt = f"""
     You are a helpful and concise AI assistant.
@@ -256,7 +257,7 @@ with st.sidebar:
                     st.session_state.active_chat = chat_id
                     st.rerun()
             with col2:
-                if st.button("Delete", key=f"delete_{chat_id}"):
+                if st.button("🗑️", key=f"delete_{chat_id}"):
                     delete_chat(chat_id)
     else:
         st.write("No chats yet")
