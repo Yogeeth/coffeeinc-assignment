@@ -7,21 +7,21 @@ It allows you to **download, manage, and switch models**, maintain **multiple ch
 
 ## Features
 
-- ** Model Management**
+- **Model Management**
   - Download popular or custom models directly from the UI.
   - View available locally installed models.
   - Switch between models instantly.
 
-- ** Multi-Chat Sessions**
+- **Multi-Chat Sessions**
   - Create multiple independent chat sessions.
   - Each chat maintains its own conversation memory.
   - First user message is used as chat title.
 
-- ** Real-Time Streaming**
+- **Real-Time Streaming**
   - See AI’s response as it’s being generated.
   - Maintains conversation context 
 
-- ** Chat History**
+- **Chat History**
   - Sidebar navigation for saved chats.
   - Option to delete old chats.
 
