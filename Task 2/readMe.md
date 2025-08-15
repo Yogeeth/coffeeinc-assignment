@@ -39,13 +39,12 @@ It allows you to **download, manage, and switch models**, maintain **multiple ch
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Yogeeth/coffeeinc-assignment.git
-   cd simple-chat-ollama
-   pip install -r requirements.txt
-   streamlit run app.py
-   cd coffeeinc-assignment
+   git clone https://github.com/Yogeeth/coffeeinc-assignment-local-llm-chat-ui.git
+   cd coffeeinc-assignment-local-llm-chat-ui
    cd Task2
    code . (optional)
+   pip install -r requirements.txt
+   streamlit run app.py
 
 ## 🖥️ UI Overview
 
